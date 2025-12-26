@@ -24,7 +24,7 @@ public:
     floor_body.shape.normal = navora::physics::Vector3(0, 1, 0);
     floor_body.shape.offset = 0.0;
     floor_body.transform.position = navora::physics::Vector3(0, -5, 0);
-    sim_.get_scene().create_entity("floor", floor_body);
+    sim_.create_entity("floor", floor_body);
 
     navora::physics::RigidBody sphere1_body;
     sphere1_body.mass = 1.0;
@@ -32,7 +32,7 @@ public:
     sphere1_body.shape.type = navora::physics::ShapeType::SPHERE;
     sphere1_body.shape.size = navora::physics::Vector3(1.0, 1.0, 1.0);
     sphere1_body.transform.position = navora::physics::Vector3(0, 5, 0);
-    sim_.get_scene().create_entity("sphere_0", sphere1_body);
+    sim_.create_entity("sphere_0", sphere1_body);
 
     navora::physics::RigidBody sphere2_body;
     sphere2_body.mass = 1.5;
@@ -40,7 +40,7 @@ public:
     sphere2_body.shape.type = navora::physics::ShapeType::SPHERE;
     sphere2_body.shape.size = navora::physics::Vector3(0.8, 0.8, 0.8);
     sphere2_body.transform.position = navora::physics::Vector3(-2, 8, 0);
-    sim_.get_scene().create_entity("sphere_1", sphere2_body);
+    sim_.create_entity("sphere_1", sphere2_body);
 
     sim_.start();
     sim_running_ = true;
@@ -114,10 +114,10 @@ public:
         metadata->set_sim_time(sim_.get_sim_time());
         metadata->set_delta_time(sim_.get_fixed_dt());
 
-        auto entity_ids = sim_.get_scene().get_all_entity_ids();
+        auto entity_ids = sim_.get_all_entity_ids();
         for (const auto& id : entity_ids) {
           navora::physics::RigidBody body;
-          if (sim_.get_scene().get_entity(id, body)) {
+          if (sim_.get_entity(id, body)) {
             auto* updated = delta.add_updated();
             updated->set_id(id);
             auto* transform = updated->mutable_transform();
@@ -170,14 +170,14 @@ public:
     switch (request->type()) {
       case navora::sim::Command::APPLY_FORCE: {
         navora::physics::RigidBody body;
-        if (sim_.get_scene().get_entity(request->entity_id(), body)) {
+        if (sim_.get_entity(request->entity_id(), body)) {
           navora::physics::Vector3 force(
             request->force().x(),
             request->force().y(),
             request->force().z()
           );
           body.apply_force(force, navora::physics::DEFAULT_DELTA_TIME);
-          sim_.get_scene().update_entity(request->entity_id(), body);
+          sim_.update_entity(request->entity_id(), body);
           response->set_success(true);
         } else {
           response->set_success(false);
@@ -187,14 +187,14 @@ public:
       }
       case navora::sim::Command::APPLY_IMPULSE: {
         navora::physics::RigidBody body;
-        if (sim_.get_scene().get_entity(request->entity_id(), body)) {
+        if (sim_.get_entity(request->entity_id(), body)) {
           navora::physics::Vector3 impulse(
             request->force().x(),
             request->force().y(),
             request->force().z()
           );
           body.apply_impulse(impulse);
-          sim_.get_scene().update_entity(request->entity_id(), body);
+          sim_.update_entity(request->entity_id(), body);
           response->set_success(true);
         } else {
           response->set_success(false);
@@ -227,12 +227,12 @@ public:
           body.shape.type = navora::physics::ShapeType::SPHERE;
           body.shape.size = navora::physics::Vector3(1.0, 1.0, 1.0);
         }
-        sim_.get_scene().create_entity(id, body);
+        sim_.create_entity(id, body);
         response->set_success(true);
         break;
       }
       case navora::sim::Command::REMOVE_ENTITY: {
-        sim_.get_scene().remove_entity(request->entity_id());
+        sim_.remove_entity(request->entity_id());
         response->set_success(true);
         break;
       }
@@ -244,7 +244,7 @@ public:
         floor_body.shape.type = navora::physics::ShapeType::PLANE;
         floor_body.shape.normal = navora::physics::Vector3(0, 1, 0);
         floor_body.transform.position = navora::physics::Vector3(0, -5, 0);
-        sim_.get_scene().create_entity("floor", floor_body);
+        sim_.create_entity("floor", floor_body);
         sim_.start();
         response->set_success(true);
         break;
