@@ -1,0 +1,33 @@
+services:
+  coordinator:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.coordinator
+    ports:
+      - "50051:50051"
+    environment:
+      - COORDINATOR_ADDR=0.0.0.0:50051
+
+  gateway:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - COORDINATOR_ADDR=coordinator:50051
+      - PORT=3000
+    depends_on:
+      - coordinator
+
+  visualizer:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.visualizer
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+

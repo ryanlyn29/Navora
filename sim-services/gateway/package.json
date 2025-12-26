@@ -1,0 +1,14 @@
+{
+  "name": "navora-gateway",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node gateway.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "@grpc/grpc-js": "^1.9.0",
+    "@grpc/proto-loader": "^0.7.10"
+  }
+}
+

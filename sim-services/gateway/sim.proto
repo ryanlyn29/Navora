@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package navora.sim;
+
+message Vector3 {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+message Quaternion {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  double w = 4;
+}
+
+message Transform {
+  Vector3 position = 1;
+  Quaternion rotation = 2;
+  Vector3 scale = 3;
+}
+
+message RigidBodyState {
+  Vector3 linear_velocity = 1;
+  Vector3 angular_velocity = 2;
+  double mass = 3;
+  double inv_mass = 4;
+}
+
+message CollisionShape {
+  enum ShapeType {
+    SPHERE = 0;
+    PLANE = 1;
+    AABB = 2;
+  }
+  ShapeType type = 1;
+  Vector3 size = 2;
+  Vector3 normal = 3;
+  double offset = 4;
+}
+
+message Entity {
+  string id = 1;
+  Transform transform = 2;
+  RigidBodyState physics = 3;
+  CollisionShape shape = 4;
+  string parent_id = 5;
+  repeated string child_ids = 6;
+}
+
+message TickMetadata {
+  uint64 tick = 1;
+  double sim_time = 2;
+  double delta_time = 3;
+}
+
+message StateDelta {
+  TickMetadata metadata = 1;
+  repeated Entity created = 2;
+  repeated string removed = 3;
+  repeated Entity updated = 4;
+}
+
+message StreamRequest {
+  string consumer_id = 1;
+  uint64 start_tick = 2;
+}
+
+message Command {
+  enum CommandType {
+    APPLY_FORCE = 0;
+    APPLY_IMPULSE = 1;
+    SPAWN_ENTITY = 2;
+    REMOVE_ENTITY = 3;
+    RESET_SIM = 4;
+  }
+  CommandType type = 1;
+  string entity_id = 2;
+  Vector3 force = 3;
+  Vector3 position = 4;
+  CollisionShape shape = 5;
+  double mass = 6;
+}
+
+message CommandResponse {
+  bool success = 1;
+  string error = 2;
+  uint64 tick = 3;
+}
+
+message SimulationStatus {
+  bool running = 1;
+  uint64 current_tick = 2;
+  double sim_time = 3;
+  uint32 consumer_count = 4;
+}
+
+service SimulationCoordinator {
+  rpc StartSimulation(Command) returns (CommandResponse);
+  rpc StopSimulation(Command) returns (CommandResponse);
+  rpc GetStatus(Command) returns (SimulationStatus);
+  rpc StreamState(StreamRequest) returns (stream StateDelta);
+  rpc SendCommand(Command) returns (CommandResponse);
+}
+

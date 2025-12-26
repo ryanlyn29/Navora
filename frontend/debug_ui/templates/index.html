@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navora Debug UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #0f0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #0ff;
+            margin-bottom: 20px;
+        }
+        .section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .section h2 {
+            color: #0ff;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        button {
+            background: #0a0;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #0c0;
+        }
+        button:disabled {
+            background: #333;
+            cursor: not-allowed;
+        }
+        .status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .status-item {
+            background: #1a1a1a;
+            padding: 8px;
+            border-radius: 3px;
+        }
+        .status-label {
+            color: #888;
+            font-size: 12px;
+        }
+        .status-value {
+            color: #0f0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        th {
+            color: #0ff;
+        }
+        input {
+            background: #1a1a1a;
+            color: #0f0;
+            border: 1px solid #444;
+            padding: 6px;
+            margin: 5px;
+            border-radius: 3px;
+            font-family: inherit;
+        }
+        .export-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Navora Simulation Debug UI</h1>
+        
+        <div class="section">
+            <h2>Control</h2>
+            <button id="btnStart">Start</button>
+            <button id="btnStop">Stop</button>
+            <button id="btnReset">Reset</button>
+            <button id="btnTick">Single Tick</button>
+            <button id="btnSpawn">Spawn Entity</button>
+        </div>
+        
+        <div class="section">
+            <h2>Status</h2>
+            <div class="status">
+                <div class="status-item">
+                    <div class="status-label">Running</div>
+                    <div class="status-value" id="statusRunning">-</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Tick</div>
+                    <div class="status-value" id="statusTick">0</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Sim Time</div>
+                    <div class="status-value" id="statusTime">0.00s</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Fixed dt</div>
+                    <div class="status-value" id="statusDt">0.0167s</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Entities</div>
+                    <div class="status-value" id="statusEntities">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Entities</h2>
+            <table id="entitiesTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Position</th>
+                        <th>Velocity</th>
+                        <th>Mass</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody id="entitiesBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="section">
+            <h2>Export USD</h2>
+            <div class="export-section">
+                <input type="text" id="exportFilename" value="simulation.usda" placeholder="filename.usda">
+                <input type="number" id="exportDuration" value="5.0" step="0.1" min="0.1" placeholder="Duration (s)">
+                <input type="number" id="exportFps" value="60" step="1" min="1" placeholder="FPS">
+                <button id="btnExport">Export to USD</button>
+            </div>
+            <div id="exportStatus" style="margin-top: 10px; color: #0ff;"></div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        let statusInterval = null;
+        
+        async function updateStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/status`);
+                const data = await res.json();
+                
+                document.getElementById('statusRunning').textContent = data.running ? 'Yes' : 'No';
+                document.getElementById('statusTick').textContent = data.tick;
+                document.getElementById('statusTime').textContent = data.simTime.toFixed(2) + 's';
+                document.getElementById('statusDt').textContent = data.fixedDt.toFixed(4) + 's';
+                document.getElementById('statusEntities').textContent = data.entityCount;
+            } catch (err) {
+                console.error('Status update failed:', err);
+            }
+        }
+        
+        async function updateEntities() {
+            try {
+                const res = await fetch(`${API_BASE}/entities`);
+                const entities = await res.json();
+                
+                const tbody = document.getElementById('entitiesBody');
+                tbody.innerHTML = entities.map(e => `
+                    <tr>
+                        <td>${e.id}</td>
+                        <td>(${e.position.x.toFixed(2)}, ${e.position.y.toFixed(2)}, ${e.position.z.toFixed(2)})</td>
+                        <td>(${e.velocity.x.toFixed(2)}, ${e.velocity.y.toFixed(2)}, ${e.velocity.z.toFixed(2)})</td>
+                        <td>${e.mass}</td>
+                        <td>${e.shapeType}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Entities update failed:', err);
+            }
+        }
+        
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: { 'Content-Type': 'application/json' }
+            };
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            const res = await fetch(`${API_BASE}${endpoint}`, options);
+            return res.json();
+        }
+        
+        document.getElementById('btnStart').onclick = async () => {
+            await apiCall('/start', 'POST');
+            updateStatus();
+        };
+        
+        document.getElementById('btnStop').onclick = async () => {
+            await apiCall('/stop', 'POST');
+            updateStatus();
+        };
+        
+        document.getElementById('btnReset').onclick = async () => {
+            await apiCall('/reset', 'POST');
+            updateStatus();
+            updateEntities();
+        };
+        
+        document.getElementById('btnTick').onclick = async () => {
+            await apiCall('/tick', 'POST');
+            updateStatus();
+            updateEntities();
+        };
+        
+        document.getElementById('btnSpawn').onclick = async () => {
+            await apiCall('/spawn', 'POST', { z: 10 });
+            updateStatus();
+            updateEntities();
+        };
+        
+        document.getElementById('btnExport').onclick = async () => {
+            const filename = document.getElementById('exportFilename').value;
+            const duration = parseFloat(document.getElementById('exportDuration').value);
+            const fps = parseInt(document.getElementById('exportFps').value);
+            
+            const statusEl = document.getElementById('exportStatus');
+            statusEl.textContent = 'Exporting...';
+            
+            try {
+                const result = await apiCall('/export', 'POST', { filename, duration, fps });
+                statusEl.textContent = `Exported: ${result.filepath} (${result.frames} frames)`;
+            } catch (err) {
+                statusEl.textContent = `Error: ${err.message}`;
+            }
+        };
+        
+        statusInterval = setInterval(() => {
+            updateStatus();
+            updateEntities();
+        }, 500);
+        
+        updateStatus();
+        updateEntities();
+    </script>
+</body>
+</html>
+

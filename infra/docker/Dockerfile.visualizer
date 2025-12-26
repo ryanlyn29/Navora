@@ -1,0 +1,16 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+COPY consumers/debug-visualizer/package.json ./
+COPY consumers/debug-visualizer/vite.config.js ./
+COPY consumers/debug-visualizer/index.html ./
+COPY consumers/debug-visualizer/src ./src
+COPY consumers/debug-visualizer/public ./public
+
+RUN npm install && npm run build
+
+EXPOSE 5173
+
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "5173"]
+
