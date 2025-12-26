@@ -1,10 +1,13 @@
 #pragma once
 
-#include "scene/usd_scene.h"
 #include "physics/integrator.h"
 #include <cstdint>
 #include <string>
 #include <functional>
+
+#ifdef USD_FOUND
+#include "scene/usd_scene.h"
+#endif
 
 namespace navora {
 
@@ -24,8 +27,10 @@ public:
 
   void tick();
 
+#ifdef USD_FOUND
   scene::USDScene& get_scene() { return scene_; }
   const scene::USDScene& get_scene() const { return scene_; }
+#endif
 
   bool is_running() const { return running_; }
   uint64_t get_tick() const { return tick_; }
@@ -34,7 +39,9 @@ public:
   void reset();
 
 private:
+#ifdef USD_FOUND
   scene::USDScene scene_;
+#endif
   physics::Integrator integrator_;
   bool running_;
   uint64_t tick_;

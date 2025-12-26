@@ -7,6 +7,7 @@ void Simulator::tick() {
 
   const double dt = FIXED_DT;
 
+#ifdef USD_FOUND
   auto entity_ids = scene_.get_all_entity_ids();
   std::vector<physics::RigidBody> bodies;
   std::vector<std::string> ids;
@@ -24,6 +25,7 @@ void Simulator::tick() {
   for (size_t i = 0; i < ids.size(); ++i) {
     scene_.update_entity(ids[i], bodies[i]);
   }
+#endif
 
   tick_++;
   sim_time_ += dt;
@@ -32,7 +34,9 @@ void Simulator::tick() {
 void Simulator::reset() {
   tick_ = 0;
   sim_time_ = 0.0;
+#ifdef USD_FOUND
   scene_.clear();
+#endif
 }
 
 }
