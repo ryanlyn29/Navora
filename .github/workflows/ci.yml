@@ -58,13 +58,13 @@ jobs:
       
       - name: Build coordinator
         run: |
-          docker build -f infra/docker/Dockerfile.coordinator -t navora/coordinator:test ../../.
+          docker build -f infra/docker/Dockerfile.coordinator -t navora/coordinator:test .
       
       - name: Build gateway
         run: |
-          docker build -f infra/docker/Dockerfile.gateway -t navora/gateway:test ../../.
+          docker build -f infra/docker/Dockerfile.gateway -t navora/gateway:test .
       
       - name: Build visualizer
         run: |
-          docker build -f infra/docker/Dockerfile.visualizer -t navora/visualizer:test ../../.
+          docker build -f infra/docker/Dockerfile.visualizer -t navora/visualizer:test .
 
